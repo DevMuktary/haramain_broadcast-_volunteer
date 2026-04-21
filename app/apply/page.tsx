@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, Loader2, UploadCloud, CheckCircle } from "lucide-react";
+import { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle2, Loader2, UploadCloud, CheckCircle, ChevronRight, ChevronLeft, ShieldAlert, FileText, X } from "lucide-react";
 
+// --- CONSTANTS & DATA ---
 const DEPARTMENTS = {
   BROADCAST_PRODUCTION: ["Broadcast Director", "Live Stream Manager", "Video Editor", "Audio Specialist"],
   CONTENT_EDITORIAL: ["Content Manager", "Content Publisher", "News & Update Coordinator", "Islamic Content Reviewer", "Translation Officer", "Arabic Content Specialist", "English Content Specialist"],
@@ -11,17 +13,36 @@ const DEPARTMENTS = {
   ADMIN_OPERATIONS: ["Admin Officer", "Finance Officer", "Partnership Manager", "Sponsorship Manager", "Regional Coordinator", "Field Representative", "Volunteer Coordinator", "Support Team Member"]
 };
 
+const COUNTRIES = [
+  "Nigeria", "Saudi Arabia", "United Arab Emirates", "United Kingdom", "United States", "Egypt", 
+  "Pakistan", "India", "Bangladesh", "Malaysia", "Indonesia", "Turkey", "Qatar", "Kuwait", 
+  "Oman", "Bahrain", "Canada", "Australia", "South Africa", "Other"
+];
+
+const TIMEZONES = [
+  "UTC-11:00 (Samoa)", "UTC-10:00 (Hawaii)", "UTC-08:00 (Pacific Time)", "UTC-05:00 (Eastern Time)", 
+  "UTC+00:00 (GMT/London)", "UTC+01:00 (WAT/Paris)", "UTC+02:00 (EET/Cairo)", "UTC+03:00 (AST/Riyadh)", 
+  "UTC+04:00 (GST/Dubai)", "UTC+05:00 (PKT/Islamabad)", "UTC+05:30 (IST/New Delhi)", 
+  "UTC+07:00 (WIB/Jakarta)", "UTC+08:00 (MYT/Kuala Lumpur)", "UTC+10:00 (AEST/Sydney)"
+];
+
+const COMMON_LANGUAGES = ["English", "Arabic", "Urdu", "French", "Hausa", "Yoruba", "Bengali", "Indonesian", "Malay", "Swahili", "Turkish"];
+
 export default function ApplicationForm() {
+  // Form State
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  
-  // Hold the actual file selected by the user
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 
+  // Terms Modal State
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+
   const [formData, setFormData] = useState({
-    fullName: "", email: "", whatsappNumber: "", country: "", city: "", languages: "",
+    fullName: "", email: "", whatsappNumber: "", country: "", city: "", 
+    languages: [] as string[],
     department: "", role: "", experienceLevel: "", currentStatus: "",
     linkedinUrl: "", portfolioUrl: "", motivation: "", relevantExperience: "",
     availableHours: "", timezone: "", agreedToTerms: false
@@ -29,38 +50,46 @@ export default function ApplicationForm() {
 
   const steps = [
     { id: 1, name: "Personal Details" },
-    { id: 2, name: "Role & Experience" },
-    { id: 3, name: "Portfolio & Motivation" },
+    { id: 2, name: "Role Selection" },
+    { id: 3, name: "Portfolio" },
     { id: 4, name: "Commitment" }
   ];
 
+  // --- HANDLERS ---
   const handleNext = () => setCurrentStep((prev) => Math.min(prev + 1, 4));
   const handleBack = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-      if (name === 'department') setFormData(prev => ({ ...prev, role: "" }));
-    }
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'department') setFormData(prev => ({ ...prev, role: "" }));
+  };
+
+  const toggleLanguage = (lang: string) => {
+    setFormData(prev => ({
+      ...prev,
+      languages: prev.languages.includes(lang) 
+        ? prev.languages.filter(l => l !== lang) 
+        : [...prev.languages, lang]
+    }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setResumeFile(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) setResumeFile(e.target.files[0]);
+  };
+
+  const handleTermsScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    // Allow a small 10px threshold for cross-browser rounding issues
+    if (scrollTop + clientHeight >= scrollHeight - 10) {
+      setHasScrolledToBottom(true);
     }
   };
 
   const uploadToCloudinary = async (file: File) => {
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-
-    if (!cloudName || !uploadPreset) {
-      throw new Error("Cloudinary credentials are missing in environment variables.");
-    }
+    if (!cloudName || !uploadPreset) throw new Error("Cloudinary configuration missing.");
 
     const data = new FormData();
     data.append("file", file);
@@ -82,19 +111,14 @@ export default function ApplicationForm() {
 
     try {
       let finalResumeUrl = "";
+      if (resumeFile) finalResumeUrl = await uploadToCloudinary(resumeFile);
 
-      // 1. Upload Resume to Cloudinary if provided
-      if (resumeFile) {
-        finalResumeUrl = await uploadToCloudinary(resumeFile);
-      }
-
-      // 2. Prepare payload for our API
-      const payload = {
-        ...formData,
-        resumeUrl: finalResumeUrl,
+      const payload = { 
+        ...formData, 
+        languages: formData.languages.join(", "), // Convert array to string for the DB
+        resumeUrl: finalResumeUrl 
       };
 
-      // 3. Send to our backend
       const response = await fetch("/api/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -102,271 +126,390 @@ export default function ApplicationForm() {
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Something went wrong.");
 
-      if (!response.ok) {
-        throw new Error(data.error || "Something went wrong during submission.");
-      }
-
-      // 4. Success! Show success screen
       setIsSuccess(true);
-
     } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || "An unexpected error occurred. Please try again.");
+      setErrorMsg(err.message || "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // SUCCESS SCREEN
+  // --- SUCCESS VIEW ---
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-500">
-        <div className="bg-white p-10 rounded-2xl shadow-xl max-w-lg w-full border border-gray-100">
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-            <CheckCircle className="h-8 w-8 text-green-600" />
+      <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center p-6 text-center">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#111827] p-10 rounded-3xl shadow-2xl max-w-lg w-full border border-gray-800">
+          <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-brand-accent/20 border border-brand-accent mb-6">
+            <CheckCircle className="h-10 w-10 text-brand-accent" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
-          <p className="text-gray-600 mb-6">
-            JazakAllah khair for volunteering. We have received your application and sent a confirmation email to <strong>{formData.email}</strong>. 
+          <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">Application Submitted</h2>
+          <p className="text-gray-400 mb-6 text-lg">
+            JazakAllah khair. A confirmation has been sent to <strong className="text-white">{formData.email}</strong>. 
           </p>
-          <p className="text-sm text-gray-500">
-            Our management team will review your details. Shortlisted candidates will be contacted via email or WhatsApp.
-          </p>
-        </div>
+          <div className="p-4 bg-[#0B1120] rounded-xl border border-gray-800">
+            <p className="text-sm text-gray-500">
+              Our management team will review your portfolio. Shortlisted candidates will be contacted directly for the next phase.
+            </p>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
+  // --- FORM VIEW ---
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#0B1120] text-gray-200 py-12 px-4 sm:px-6 lg:px-8 selection:bg-brand-accent selection:text-white">
+      
+      {/* Background Pattern */}
+      <div className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "url('/pattern.png')" }} />
+
+      <div className="max-w-4xl mx-auto relative z-10">
         
-        {/* Header & Progress Bar */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900 text-center mb-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <motion.h2 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-4xl font-extrabold text-white tracking-tight mb-8">
             Volunteer Application
-          </h2>
+          </motion.h2>
           
-          <nav aria-label="Progress">
-            <ol role="list" className="flex items-center justify-between space-x-2">
+          {/* Progress Bar */}
+          <nav aria-label="Progress" className="relative">
+            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-800 -z-10 -translate-y-1/2 rounded-full"></div>
+            <ol role="list" className="flex items-center justify-between">
               {steps.map((step) => (
-                <li key={step.name} className="relative flex-1">
-                  <div className={`flex items-center justify-center p-3 text-sm font-medium border-b-2 transition-colors duration-300 ${
-                    currentStep === step.id ? "border-blue-600 text-blue-600" : 
-                    currentStep > step.id ? "border-green-500 text-green-500" : 
-                    "border-gray-200 text-gray-500"
+                <li key={step.name} className="relative">
+                  <div className={`flex flex-col items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-500 shadow-xl bg-[#0B1120] ${
+                    currentStep === step.id ? "border-brand-accent text-brand-accent scale-110 shadow-brand-accent/20" : 
+                    currentStep > step.id ? "border-brand-accent bg-brand-accent text-white" : 
+                    "border-gray-700 text-gray-600"
                   }`}>
-                    {currentStep > step.id ? (
-                      <CheckCircle2 className="w-5 h-5 mr-2" />
-                    ) : (
-                      <span className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center text-xs mr-2">
-                        {step.id}
-                      </span>
-                    )}
-                    <span className="hidden sm:block">{step.name}</span>
+                    {currentStep > step.id ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-sm font-bold">{step.id}</span>}
                   </div>
+                  <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-xs font-medium whitespace-nowrap hidden sm:block text-gray-400">
+                    {step.name}
+                  </span>
                 </li>
               ))}
             </ol>
           </nav>
         </div>
 
-        {/* Error Alert */}
+        {/* Error State */}
         {errorMsg && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 animate-in fade-in">
-            <p className="font-medium">Submission Failed</p>
-            <p className="text-sm">{errorMsg}</p>
-          </div>
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-6 p-4 bg-red-900/30 border border-red-500/50 rounded-xl flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-400">Submission Failed</p>
+              <p className="text-sm text-red-300/80">{errorMsg}</p>
+            </div>
+          </motion.div>
         )}
 
-        {/* Form Area */}
-        <div className="bg-white shadow-xl rounded-lg p-6 sm:p-10 border border-gray-100 min-h-[400px]">
-          
-          {/* Step 1: Personal Details */}
-          {currentStep === 1 && (
-            <div className="space-y-6 animate-in fade-in duration-500">
-              <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">Personal Information</h3>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        {/* Form Container */}
+        <div className="bg-[#111827] shadow-2xl rounded-3xl p-6 sm:p-12 border border-gray-800 relative overflow-hidden min-h-[500px]">
+          <AnimatePresence mode="wait">
+            
+            {/* STEP 1 */}
+            {currentStep === 1 && (
+              <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="space-y-8">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                  <input name="fullName" value={formData.fullName} onChange={handleChange} type="text" className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border" />
+                  <h3 className="text-2xl font-bold text-white">Personal Information</h3>
+                  <p className="text-gray-500 text-sm mt-1">Provide your accurate details for seamless communication.</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                  <input name="email" value={formData.email} onChange={handleChange} type="email" className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border" />
+                
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Full Name</label>
+                    <input name="fullName" value={formData.fullName} onChange={handleChange} type="text" className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent focus:ring-brand-accent p-3.5 transition-colors" placeholder="e.g. Abdullah Rahman" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Email Address</label>
+                    <input name="email" value={formData.email} onChange={handleChange} type="email" className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent focus:ring-brand-accent p-3.5 transition-colors" placeholder="email@domain.com" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">WhatsApp Number (with Code)</label>
+                    <input name="whatsappNumber" value={formData.whatsappNumber} onChange={handleChange} type="tel" className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent focus:ring-brand-accent p-3.5 transition-colors" placeholder="+234..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Country of Residence</label>
+                    <select name="country" value={formData.country} onChange={handleChange} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent focus:ring-brand-accent p-3.5 transition-colors appearance-none">
+                      <option value="">Select Country</option>
+                      {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-400 mb-3">Languages Spoken (Select all that apply)</label>
+                    <div className="flex flex-wrap gap-2">
+                      {COMMON_LANGUAGES.map(lang => (
+                        <button
+                          key={lang} type="button" onClick={() => toggleLanguage(lang)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                            formData.languages.includes(lang) 
+                              ? "bg-brand-accent/20 border-brand-accent text-brand-accent" 
+                              : "bg-[#0B1120] border-gray-700 text-gray-400 hover:border-gray-500"
+                          }`}
+                        >
+                          {lang}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">WhatsApp Number</label>
-                  <input name="whatsappNumber" value={formData.whatsappNumber} onChange={handleChange} type="tel" className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">City & Country</label>
-                  <input name="city" value={formData.city} onChange={handleChange} type="text" className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border" placeholder="Lagos, Nigeria" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">Languages Spoken</label>
-                  <input name="languages" value={formData.languages} onChange={handleChange} type="text" className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border" placeholder="English, Arabic, Yoruba (Comma separated)" />
-                </div>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            )}
 
-          {/* Step 2: Role & Experience */}
-          {currentStep === 2 && (
-            <div className="space-y-6 animate-in fade-in duration-500">
-              <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">Role Selection</h3>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {/* STEP 2 */}
+            {currentStep === 2 && (
+              <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="space-y-8">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Department</label>
-                  <select name="department" value={formData.department} onChange={handleChange} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white">
-                    <option value="">Select a Department</option>
-                    <option value="BROADCAST_PRODUCTION">Broadcast & Production</option>
-                    <option value="CONTENT_EDITORIAL">Content & Editorial</option>
-                    <option value="DESIGN_ENGINEERING">Design & Engineering</option>
-                    <option value="MARKETING_ENGAGEMENT">Marketing & Engagement</option>
-                    <option value="ADMIN_OPERATIONS">Administration & Operations</option>
-                  </select>
+                  <h3 className="text-2xl font-bold text-white">Role Selection</h3>
+                  <p className="text-gray-500 text-sm mt-1">Select the department and exact role you are applying for.</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Specific Role</label>
-                  <select name="role" value={formData.role} onChange={handleChange} disabled={!formData.department} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white disabled:bg-gray-100">
-                    <option value="">Select a Role</option>
-                    {formData.department && DEPARTMENTS[formData.department as keyof typeof DEPARTMENTS].map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Experience Level</label>
-                  <select name="experienceLevel" value={formData.experienceLevel} onChange={handleChange} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white">
-                    <option value="">Select Experience</option>
-                    <option value="0-1">0 - 1 Years</option>
-                    <option value="1-3">1 - 3 Years</option>
-                    <option value="3-5">3 - 5 Years</option>
-                    <option value="5+">5+ Years</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Current Status</label>
-                  <select name="currentStatus" value={formData.currentStatus} onChange={handleChange} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-white">
-                    <option value="">Select Status</option>
-                    <option value="Student">Student</option>
-                    <option value="Employed">Employed</option>
-                    <option value="Freelancer">Freelancer</option>
-                    <option value="Unemployed">Unemployed</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Step 3: Portfolio & Motivation */}
-          {currentStep === 3 && (
-            <div className="space-y-6 animate-in fade-in duration-500">
-              <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">Portfolio & Motivation</h3>
-              
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Portfolio / GitHub / LinkedIn</label>
-                  <input name="portfolioUrl" value={formData.portfolioUrl} onChange={handleChange} type="url" className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 p-2 border" placeholder="https://..." />
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Department</label>
+                    <select name="department" value={formData.department} onChange={handleChange} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 appearance-none">
+                      <option value="">Select a Department</option>
+                      <option value="BROADCAST_PRODUCTION">Broadcast & Production</option>
+                      <option value="CONTENT_EDITORIAL">Content & Editorial</option>
+                      <option value="DESIGN_ENGINEERING">Design & Engineering</option>
+                      <option value="MARKETING_ENGAGEMENT">Marketing & Engagement</option>
+                      <option value="ADMIN_OPERATIONS">Administration & Operations</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Specific Role</label>
+                    <select name="role" value={formData.role} onChange={handleChange} disabled={!formData.department} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 appearance-none disabled:opacity-50 disabled:cursor-not-allowed">
+                      <option value="">Select a Role</option>
+                      {formData.department && DEPARTMENTS[formData.department as keyof typeof DEPARTMENTS].map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Experience Level</label>
+                    <select name="experienceLevel" value={formData.experienceLevel} onChange={handleChange} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 appearance-none">
+                      <option value="">Select Experience</option>
+                      <option value="0-1">0 - 1 Years</option>
+                      <option value="1-3">1 - 3 Years</option>
+                      <option value="3-5">3 - 5 Years</option>
+                      <option value="5+">5+ Years</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Current Professional Status</label>
+                    <select name="currentStatus" value={formData.currentStatus} onChange={handleChange} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 appearance-none">
+                      <option value="">Select Status</option>
+                      <option value="Student">Student</option>
+                      <option value="Employed">Employed</option>
+                      <option value="Freelancer">Freelancer</option>
+                      <option value="Unemployed">Unemployed</option>
+                    </select>
+                  </div>
                 </div>
+              </motion.div>
+            )}
+
+            {/* STEP 3 */}
+            {currentStep === 3 && (
+              <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="space-y-8">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Resume / CV (PDF)</label>
-                  <div className="mt-1 flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-14 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                      <div className="flex flex-row items-center justify-center gap-2">
-                        <UploadCloud className="w-5 h-5 text-gray-500" />
-                        <p className="text-sm text-gray-500 font-semibold">
-                          {resumeFile ? resumeFile.name : "Click to select file"}
-                        </p>
+                  <h3 className="text-2xl font-bold text-white">Portfolio & Motivation</h3>
+                  <p className="text-gray-500 text-sm mt-1">Show us your past work and tell us why you want to join.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Link to Work (GitHub, Behance, Drive)</label>
+                    <input name="portfolioUrl" value={formData.portfolioUrl} onChange={handleChange} type="url" className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5" placeholder="https://..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Resume / CV Document (PDF)</label>
+                    <label className="flex items-center justify-center w-full h-[52px] border-2 border-gray-700 border-dashed rounded-xl cursor-pointer bg-[#0B1120] hover:bg-gray-800 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <UploadCloud className="w-5 h-5 text-brand-accent" />
+                        <span className="text-sm font-medium text-gray-300 truncate max-w-[200px]">
+                          {resumeFile ? resumeFile.name : "Select Document"}
+                        </span>
                       </div>
                       <input type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
                     </label>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Why do you want to volunteer for Haramain Broadcast?</label>
-                <textarea name="motivation" value={formData.motivation} onChange={handleChange} rows={3} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 p-2 border" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Briefly describe your relevant experience.</label>
-                <textarea name="relevantExperience" value={formData.relevantExperience} onChange={handleChange} rows={2} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 p-2 border" />
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Commitment */}
-          {currentStep === 4 && (
-            <div className="space-y-6 animate-in fade-in duration-500">
-              <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">Commitment & Agreement</h3>
-              
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Available Hours per Week</label>
-                  <select name="availableHours" value={formData.availableHours} onChange={handleChange} className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 p-2 border bg-white">
-                    <option value="">Select Hours</option>
-                    <option value="2-5">2 - 5 Hours</option>
-                    <option value="5-10">5 - 10 Hours</option>
-                    <option value="10-20">10 - 20 Hours</option>
-                    <option value="20+">20+ Hours</option>
-                  </select>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Why do you want to volunteer for Haramain Broadcast?</label>
+                  <textarea name="motivation" value={formData.motivation} onChange={handleChange} rows={3} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 resize-none" placeholder="Share your motivation..." />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Timezone</label>
-                  <input name="timezone" value={formData.timezone} onChange={handleChange} type="text" className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 p-2 border" placeholder="e.g. GMT+1 (WAT)" />
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Briefly describe your most relevant project or experience.</label>
+                  <textarea name="relevantExperience" value={formData.relevantExperience} onChange={handleChange} rows={2} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 resize-none" />
                 </div>
-              </div>
+              </motion.div>
+            )}
 
-              <div className="mt-6 bg-gray-50 p-4 rounded-md border border-gray-200">
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input name="agreedToTerms" checked={formData.agreedToTerms} onChange={handleChange} type="checkbox" className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+            {/* STEP 4 */}
+            {currentStep === 4 && (
+              <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="space-y-8">
+                <div>
+                  <h3 className="text-2xl font-bold text-white">Commitment</h3>
+                  <p className="text-gray-500 text-sm mt-1">Finalize your availability and accept the organizational terms.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Available Hours per Week</label>
+                    <select name="availableHours" value={formData.availableHours} onChange={handleChange} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 appearance-none">
+                      <option value="">Select Hours</option>
+                      <option value="2-5">2 - 5 Hours</option>
+                      <option value="5-10">5 - 10 Hours</option>
+                      <option value="10-20">10 - 20 Hours</option>
+                      <option value="20+">20+ Hours</option>
+                    </select>
                   </div>
-                  <div className="ml-3 text-sm">
-                    <label className="font-medium text-gray-900">I agree to the Terms & Conditions</label>
-                    <p className="text-gray-500 mt-1">
-                      By checking this box, I confirm that I have read and agree to the HARAMAIN BROADCAST Volunteer Team Rules & Terms. I understand this is an unpaid volunteer position.
-                    </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Timezone</label>
+                    <select name="timezone" value={formData.timezone} onChange={handleChange} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 appearance-none">
+                      <option value="">Select Timezone</option>
+                      {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                    </select>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
 
-          {/* Navigation Buttons */}
-          <div className="mt-10 flex justify-between pt-6 border-t border-gray-200">
+                {/* TERMS SECTION TRIGGER */}
+                <div className="mt-8 p-6 bg-[#0B1120] rounded-2xl border border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`mt-1 flex-shrink-0 w-6 h-6 rounded flex items-center justify-center border transition-colors ${formData.agreedToTerms ? "bg-brand-accent border-brand-accent" : "bg-[#111827] border-gray-600"}`}>
+                       {formData.agreedToTerms && <CheckCircle className="w-4 h-4 text-white" />}
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">Organizational Terms & Conditions</p>
+                      <p className="text-sm text-gray-500 mt-1">You must read and accept the volunteer terms to submit your application.</p>
+                    </div>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => setIsTermsOpen(true)}
+                    className="shrink-0 px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" /> {formData.agreedToTerms ? "Review Terms" : "Read Terms to Accept"}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+
+          {/* Navigation Footer */}
+          <div className="mt-12 flex justify-between items-center pt-6 border-t border-gray-800">
             <button
-              type="button"
-              onClick={handleBack}
-              disabled={currentStep === 1 || isSubmitting}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                currentStep === 1 || isSubmitting ? "text-gray-400 bg-gray-100 cursor-not-allowed border-transparent" : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+              type="button" onClick={handleBack} disabled={currentStep === 1 || isSubmitting}
+              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl transition-all ${
+                currentStep === 1 || isSubmitting ? "text-gray-600 cursor-not-allowed opacity-50" : "text-white bg-gray-800 hover:bg-gray-700"
               }`}
             >
-              Back
+              <ChevronLeft className="w-4 h-4" /> Back
             </button>
+
             <button
-              type="button"
-              onClick={currentStep === 4 ? handleSubmit : handleNext}
+              type="button" onClick={currentStep === 4 ? handleSubmit : handleNext}
               disabled={isSubmitting || (currentStep === 4 && !formData.agreedToTerms)}
-              className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center"
+              className="flex items-center gap-2 px-8 py-3 text-sm font-bold text-white bg-brand-accent hover:bg-blue-500 rounded-xl shadow-[0_0_20px_rgba(14,165,233,0.3)] transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                currentStep === 4 ? "Submit Application" : "Next Step"
-              )}
+              {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : 
+               currentStep === 4 ? "Submit Application" : <>Next Step <ChevronRight className="w-4 h-4" /></>}
             </button>
           </div>
-
         </div>
       </div>
+
+      {/* --- TERMS MODAL --- */}
+      <AnimatePresence>
+        {isTermsOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
+              className="bg-[#111827] border border-gray-700 rounded-3xl w-full max-w-3xl overflow-hidden flex flex-col shadow-2xl h-[85vh] max-h-[800px]"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-5 border-b border-gray-800 flex justify-between items-center bg-[#0B1120]">
+                <h3 className="text-xl font-bold text-white">Volunteer Agreement Terms</h3>
+                <button onClick={() => setIsTermsOpen(false)} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Content Area */}
+              <div onScroll={handleTermsScroll} className="flex-1 overflow-y-auto p-6 space-y-6 text-gray-300 text-sm leading-relaxed custom-scrollbar relative">
+                <div className="bg-brand-accent/10 border border-brand-accent/30 text-brand-accent p-4 rounded-xl mb-6 font-medium text-center">
+                  Scroll to the absolute bottom of this document to enable the Accept button.
+                </div>
+
+                <h4 className="font-bold text-white text-base">1. Nature of Participation</h4>
+                <p>All positions under HARAMAIN BROADCAST are entirely volunteer-based unless officially stated otherwise in writing by Executive Management. Participation on the team does not constitute an employer-employee relationship and does not create any entitlement to salary, wages, equity, profit-sharing, or ownership rights.</p>
+
+                <h4 className="font-bold text-white text-base mt-6">2. Intellectual Property & Asset Ownership</h4>
+                <p>Volunteers, contributors, moderators, and all team members acknowledge that they do not hold any ownership rights over HARAMAIN BROADCAST. This includes, but is not limited to, platforms, social media pages, websites, source code, brand assets, systems, and content, unless formally documented and executed by the Founder/Management.</p>
+
+                <h4 className="font-bold text-white text-base mt-6">3. Respect for Leadership & Decision-Making</h4>
+                <p>Team members must respect the established leadership hierarchy and their assigned scopes of responsibility. Final authority regarding organizational strategy, branding, partnerships, security protocols, platform management, and operational direction resides exclusively with Management.</p>
+
+                <h4 className="font-bold text-white text-base mt-6">4. Code of Professional Conduct</h4>
+                <p>Every team member is expected to maintain the highest standards of professionalism, honesty, discipline, and respect when representing HARAMAIN BROADCAST. Abusive behavior, harassment, misconduct, or actions that could bring disrepute to the brand are strictly prohibited.</p>
+
+                <h4 className="font-bold text-white text-base mt-6">5. Strict Confidentiality</h4>
+                <p>Internal communications, passwords, technical infrastructure, private strategies, operational procedures, financial records, and sensitive organizational data must remain strictly confidential. Sharing such information outside the organization is a severe breach.</p>
+
+                <h4 className="font-bold text-white text-base mt-6">6. Prohibition of Unauthorized Fundraising</h4>
+                <p>No team member may solicit donations, sponsorships, payments, or financial contributions in the name of HARAMAIN BROADCAST without formalized, written approval from Management. Unauthorized fundraising is a severe violation of organizational trust.</p>
+
+                <h4 className="font-bold text-white text-base mt-6">7. Upholding Islamic Integrity</h4>
+                <p>As an Islamic media platform, all team members are required to uphold core Islamic values of Amanah (trustworthiness), Sidq (honesty), and Adab (respectful conduct). Content creation and personal behavior must align with and reflect the mission and ethical standards of HARAMAIN BROADCAST.</p>
+                
+                <h4 className="font-bold text-white text-base mt-6">8. Resignation & Offboarding</h4>
+                <p>If a volunteer wishes to step down from their role, they must provide reasonable notice to their coordinator to allow for a smooth transition. Upon departure, the volunteer must relinquish all administrative access.</p>
+                
+                <p className="pt-8 text-center text-gray-500 italic">-- End of Document --</p>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-5 border-t border-gray-800 bg-[#0B1120] flex justify-end gap-4">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, agreedToTerms: false }));
+                    setIsTermsOpen(false);
+                  }} 
+                  className="px-6 py-2.5 rounded-xl text-gray-400 hover:text-white font-medium transition-colors"
+                >
+                  Reject & Close
+                </button>
+                <button 
+                  type="button" 
+                  disabled={!hasScrolledToBottom}
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, agreedToTerms: true }));
+                    setIsTermsOpen(false);
+                  }} 
+                  className={`px-8 py-2.5 rounded-xl font-bold transition-all duration-300 ${
+                    hasScrolledToBottom 
+                      ? "bg-brand-accent text-white shadow-[0_0_15px_rgba(14,165,233,0.4)] hover:bg-blue-500 cursor-pointer" 
+                      : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  I Accept the Terms
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
