@@ -327,7 +327,7 @@ export default function ApplicationForm() {
           </div>
           <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">Application Submitted</h2>
           <p className="text-gray-400 mb-6 text-lg">
-            JazakAllah khair. A confirmation has been sent to <strong className="text-white">{formData.email}</strong>. 
+            JazakAllah khair. A confirmation has been sent to <strong className="text-white break-all">{formData.email}</strong>. 
           </p>
           <div className="p-4 bg-[#0B1120] rounded-xl border border-gray-800">
             <p className="text-sm text-gray-500">
