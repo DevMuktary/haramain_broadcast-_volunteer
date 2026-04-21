@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Loader2, UploadCloud, CheckCircle, ChevronRight, ChevronLeft, ShieldAlert, FileText, X, AlertCircle, Info } from "lucide-react";
 
@@ -13,7 +13,6 @@ const DEPARTMENTS = {
   ADMIN_OPERATIONS: ["Admin Officer", "Finance Officer", "Partnership Manager", "Sponsorship Manager", "Regional Coordinator", "Field Representative", "Volunteer Coordinator", "Support Team Member"]
 };
 
-// Comprehensive Role Descriptions
 const ROLE_DESCRIPTIONS: Record<string, string> = {
   "Broadcast Director": "Oversee the overall live stream and broadcast operations, ensuring high-quality output and coordination among teams.",
   "Live Stream Manager": "Manage technical aspects of the live stream, including encoders (OBS/vMix), stream health, and multi-platform syndication.",
@@ -48,31 +47,33 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
   "Support Team Member": "A versatile role assisting various departments as needed during high-traffic broadcasts."
 };
 
-// Saudi First, followed by a comprehensive global list with Dial Codes
+// Comprehensive Global List (Saudi & Palestine prioritized)
 const COUNTRIES = [
   { name: "Saudi Arabia", code: "+966" },
-  { name: "United Arab Emirates", code: "+971" },
-  { name: "Qatar", code: "+974" },
-  { name: "Kuwait", code: "+965" },
-  { name: "Oman", code: "+968" },
-  { name: "Bahrain", code: "+973" },
-  { name: "Egypt", code: "+20" },
-  { name: "Nigeria", code: "+234" },
-  { name: "United Kingdom", code: "+44" },
-  { name: "United States", code: "+1" },
-  { name: "Canada", code: "+1" },
-  { name: "Australia", code: "+61" },
-  { name: "Pakistan", code: "+92" },
-  { name: "India", code: "+91" },
-  { name: "Bangladesh", code: "+880" },
-  { name: "Malaysia", code: "+60" },
-  { name: "Indonesia", code: "+62" },
-  { name: "Turkey", code: "+90" },
-  { name: "South Africa", code: "+27" },
-  { name: "Morocco", code: "+212" },
-  { name: "Algeria", code: "+213" },
-  { name: "France", code: "+33" },
-  { name: "Germany", code: "+49" }
+  { name: "Palestine", code: "+970" },
+  { name: "Afghanistan", code: "+93" }, { name: "Albania", code: "+355" }, { name: "Algeria", code: "+213" }, 
+  { name: "Argentina", code: "+54" }, { name: "Australia", code: "+61" }, { name: "Austria", code: "+43" }, 
+  { name: "Bahrain", code: "+973" }, { name: "Bangladesh", code: "+880" }, { name: "Belgium", code: "+32" }, 
+  { name: "Brazil", code: "+55" }, { name: "Brunei", code: "+673" }, { name: "Canada", code: "+1" }, 
+  { name: "China", code: "+86" }, { name: "Colombia", code: "+57" }, { name: "Denmark", code: "+45" }, 
+  { name: "Egypt", code: "+20" }, { name: "Finland", code: "+358" }, { name: "France", code: "+33" }, 
+  { name: "Germany", code: "+49" }, { name: "Ghana", code: "+233" }, { name: "Greece", code: "+30" }, 
+  { name: "India", code: "+91" }, { name: "Indonesia", code: "+62" }, { name: "Iran", code: "+98" }, 
+  { name: "Iraq", code: "+964" }, { name: "Ireland", code: "+353" }, { name: "Italy", code: "+39" }, 
+  { name: "Japan", code: "+81" }, { name: "Jordan", code: "+962" }, { name: "Kenya", code: "+254" }, 
+  { name: "Kuwait", code: "+965" }, { name: "Lebanon", code: "+961" }, { name: "Libya", code: "+218" }, 
+  { name: "Malaysia", code: "+60" }, { name: "Maldives", code: "+960" }, { name: "Mexico", code: "+52" }, 
+  { name: "Morocco", code: "+212" }, { name: "Netherlands", code: "+31" }, { name: "New Zealand", code: "+64" }, 
+  { name: "Nigeria", code: "+234" }, { name: "Norway", code: "+47" }, { name: "Oman", code: "+968" }, 
+  { name: "Pakistan", code: "+92" }, { name: "Philippines", code: "+63" }, { name: "Portugal", code: "+351" }, 
+  { name: "Qatar", code: "+974" }, { name: "Russia", code: "+7" }, { name: "Senegal", code: "+221" }, 
+  { name: "Singapore", code: "+65" }, { name: "Somalia", code: "+252" }, { name: "South Africa", code: "+27" }, 
+  { name: "South Korea", code: "+82" }, { name: "Spain", code: "+34" }, { name: "Sri Lanka", code: "+94" }, 
+  { name: "Sudan", code: "+249" }, { name: "Sweden", code: "+46" }, { name: "Switzerland", code: "+41" }, 
+  { name: "Syria", code: "+963" }, { name: "Tanzania", code: "+255" }, { name: "Thailand", code: "+66" }, 
+  { name: "Tunisia", code: "+216" }, { name: "Turkey", code: "+90" }, { name: "Uganda", code: "+256" }, 
+  { name: "United Arab Emirates", code: "+971" }, { name: "United Kingdom", code: "+44" }, { name: "United States", code: "+1" }, 
+  { name: "Yemen", code: "+967" }, { name: "Zimbabwe", code: "+263" }
 ];
 
 const TIMEZONES = [
@@ -85,10 +86,9 @@ const TIMEZONES = [
   "UTC+11:00 (Solomon Is.)", "UTC+12:00 (Fiji)", "UTC+13:00 (New Zealand)", "UTC+14:00 (Line Islands)"
 ];
 
-const COMMON_LANGUAGES = ["English", "Arabic", "Urdu", "French", "Hausa", "Yoruba", "Bengali", "Indonesian", "Malay", "Swahili", "Turkish"];
+const COMMON_LANGUAGES = ["English", "Arabic", "Urdu", "French", "Hausa", "Spanish", "Bengali", "Indonesian", "Malay", "Swahili", "Turkish"];
 
 export default function ApplicationForm() {
-  // Form State
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -96,12 +96,10 @@ export default function ApplicationForm() {
   const [stepError, setStepError] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 
-  // Dynamic UI States
   const [dialCode, setDialCode] = useState("");
   const [customLanguage, setCustomLanguage] = useState("");
   const [showCustomLanguage, setShowCustomLanguage] = useState(false);
 
-  // Terms Modal State
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
 
@@ -120,38 +118,35 @@ export default function ApplicationForm() {
     { id: 4, name: "Commitment" }
   ];
 
-  // --- VALIDATION LOGIC ---
+  // --- STRICT VALIDATION LOGIC ---
+  const isStep1Valid = formData.fullName && formData.email && formData.whatsappNumber && formData.country && formData.languages.length > 0;
+  const isStep2Valid = formData.department && formData.role && formData.experienceLevel && formData.currentStatus;
+  const isStep3Valid = formData.motivation.length >= 100 && formData.relevantExperience;
+  const isStep4Valid = formData.availableHours && formData.timezone && formData.agreedToTerms;
+
   const validateStep = (step: number) => {
-    setStepError(""); // Clear previous errors
-    
-    if (step === 1) {
-      if (!formData.fullName || !formData.email || !formData.whatsappNumber || !formData.country || formData.languages.length === 0) {
-        setStepError("Please fill in all required fields (marked with *) and select at least one language.");
-        return false;
-      }
+    setStepError(""); 
+    if (step === 1 && !isStep1Valid) {
+      setStepError("Please fill in all required fields and select at least one language.");
+      return false;
     }
-    if (step === 2) {
-      if (!formData.department || !formData.role || !formData.experienceLevel || !formData.currentStatus) {
-        setStepError("Please complete all fields regarding your intended role and experience.");
-        return false;
-      }
+    if (step === 2 && !isStep2Valid) {
+      setStepError("Please complete all required fields regarding your role.");
+      return false;
     }
     if (step === 3) {
-      if (!formData.motivation || !formData.relevantExperience) {
-        setStepError("Please fill in your motivation and relevant experience.");
+      if (formData.motivation.length < 100) {
+        setStepError("Your motivation must be at least 100 characters long.");
         return false;
       }
-    }
-    if (step === 4) {
-      if (!formData.availableHours || !formData.timezone) {
-        setStepError("Please select your availability and timezone.");
+      if (!formData.relevantExperience) {
+        setStepError("Please describe your relevant experience.");
         return false;
       }
     }
     return true;
   };
 
-  // --- HANDLERS ---
   const handleNext = () => {
     if (validateStep(currentStep)) {
       setCurrentStep((prev) => Math.min(prev + 1, 4));
@@ -166,16 +161,11 @@ export default function ApplicationForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
-    // Auto-update Dial Code when Country changes
     if (name === "country") {
       const selectedCountry = COUNTRIES.find(c => c.name === value);
       setDialCode(selectedCountry ? selectedCountry.code : "");
     }
-
     setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Reset Role if Department changes
     if (name === 'department') setFormData(prev => ({ ...prev, role: "" }));
   };
 
@@ -192,10 +182,8 @@ export default function ApplicationForm() {
     }));
   };
 
-  // Add custom language typed by user
   useEffect(() => {
     if (customLanguage && !formData.languages.includes(customLanguage)) {
-      // Remove previous custom language if it exists to avoid duplicates, then add new
       const filtered = formData.languages.filter(l => !l.startsWith("Custom:"));
       setFormData(prev => ({ ...prev, languages: [...filtered, `Custom: ${customLanguage}`] }));
     }
@@ -207,9 +195,7 @@ export default function ApplicationForm() {
 
   const handleTermsScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollTop + clientHeight >= scrollHeight - 10) {
-      setHasScrolledToBottom(true);
-    }
+    if (scrollTop + clientHeight >= scrollHeight - 10) setHasScrolledToBottom(true);
   };
 
   const uploadToCloudinary = async (file: File) => {
@@ -232,7 +218,10 @@ export default function ApplicationForm() {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(4)) return;
+    if (!validateStep(4) || !isStep4Valid) {
+      setStepError("Please complete all required fields and accept the terms.");
+      return;
+    }
     setIsSubmitting(true);
     setErrorMsg("");
 
@@ -240,7 +229,6 @@ export default function ApplicationForm() {
       let finalResumeUrl = "";
       if (resumeFile) finalResumeUrl = await uploadToCloudinary(resumeFile);
 
-      // Combine dial code with whatsapp number if not already present
       const fullWhatsApp = formData.whatsappNumber.startsWith("+") 
         ? formData.whatsappNumber 
         : `${dialCode} ${formData.whatsappNumber}`;
@@ -269,7 +257,6 @@ export default function ApplicationForm() {
     }
   };
 
-  // --- SUCCESS VIEW ---
   if (isSuccess) {
     return (
       <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center p-6 text-center">
@@ -281,32 +268,20 @@ export default function ApplicationForm() {
           <p className="text-gray-400 mb-6 text-lg">
             JazakAllah khair. A confirmation has been sent to <strong className="text-white">{formData.email}</strong>. 
           </p>
-          <div className="p-4 bg-[#0B1120] rounded-xl border border-gray-800">
-            <p className="text-sm text-gray-500">
-              Our management team will review your portfolio. Shortlisted candidates will be contacted directly for the next phase.
-            </p>
-          </div>
         </motion.div>
       </div>
     );
   }
 
-  // --- FORM VIEW ---
   return (
     <div className="min-h-screen bg-[#0B1120] text-gray-200 py-12 px-4 sm:px-6 lg:px-8 selection:bg-brand-accent selection:text-white">
-      
-      {/* Background Pattern */}
       <div className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "url('/pattern.png')" }} />
-
       <div className="max-w-4xl mx-auto relative z-10">
         
-        {/* Header */}
         <div className="text-center mb-12">
           <motion.h2 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-4xl font-extrabold text-white tracking-tight mb-8">
             Volunteer Application
           </motion.h2>
-          
-          {/* Progress Bar */}
           <nav aria-label="Progress" className="relative">
             <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-800 -z-10 -translate-y-1/2 rounded-full"></div>
             <ol role="list" className="flex items-center justify-between">
@@ -314,8 +289,7 @@ export default function ApplicationForm() {
                 <li key={step.name} className="relative">
                   <div className={`flex flex-col items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-500 shadow-xl bg-[#0B1120] ${
                     currentStep === step.id ? "border-brand-accent text-brand-accent scale-110 shadow-brand-accent/20" : 
-                    currentStep > step.id ? "border-brand-accent bg-brand-accent text-white" : 
-                    "border-gray-700 text-gray-600"
+                    currentStep > step.id ? "border-brand-accent bg-brand-accent text-white" : "border-gray-700 text-gray-600"
                   }`}>
                     {currentStep > step.id ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-sm font-bold">{step.id}</span>}
                   </div>
@@ -328,7 +302,6 @@ export default function ApplicationForm() {
           </nav>
         </div>
 
-        {/* Global Submission Error */}
         {errorMsg && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-6 p-4 bg-red-900/30 border border-red-500/50 rounded-xl flex items-start gap-3">
             <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
@@ -339,7 +312,6 @@ export default function ApplicationForm() {
           </motion.div>
         )}
 
-        {/* Validation Step Error */}
         {stepError && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-xl flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-500 shrink-0" />
@@ -347,11 +319,9 @@ export default function ApplicationForm() {
           </motion.div>
         )}
 
-        {/* Form Container */}
         <div className="bg-[#111827] shadow-2xl rounded-3xl p-6 sm:p-12 border border-gray-800 relative overflow-hidden min-h-[500px]">
           <AnimatePresence mode="wait">
             
-            {/* STEP 1 */}
             {currentStep === 1 && (
               <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="space-y-8">
                 <div>
@@ -362,16 +332,16 @@ export default function ApplicationForm() {
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-2">Full Name <span className="text-red-500">*</span></label>
-                    <input name="fullName" value={formData.fullName} onChange={handleChange} type="text" className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent focus:ring-brand-accent p-3.5 transition-colors" placeholder="e.g. Abdullah Rahman" />
+                    <input name="fullName" value={formData.fullName} onChange={handleChange} type="text" className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-2">Email Address <span className="text-red-500">*</span></label>
-                    <input name="email" value={formData.email} onChange={handleChange} type="email" className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent focus:ring-brand-accent p-3.5 transition-colors" placeholder="email@domain.com" />
+                    <input name="email" value={formData.email} onChange={handleChange} type="email" className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5" />
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-2">Country of Residence <span className="text-red-500">*</span></label>
-                    <select name="country" value={formData.country} onChange={handleChange} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent focus:ring-brand-accent p-3.5 transition-colors appearance-none">
+                    <select name="country" value={formData.country} onChange={handleChange} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 appearance-none">
                       <option value="">Select Country</option>
                       {COUNTRIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                       <option disabled>──────────</option>
@@ -385,7 +355,7 @@ export default function ApplicationForm() {
                       <div className="flex items-center justify-center px-4 bg-gray-800 border border-r-0 border-gray-700 rounded-l-xl text-gray-400 font-medium select-none">
                         {dialCode || "Code"}
                       </div>
-                      <input name="whatsappNumber" value={formData.whatsappNumber} onChange={handleChange} type="tel" className="w-full rounded-r-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent focus:ring-brand-accent p-3.5 transition-colors" placeholder="e.g. 801 234 5678" />
+                      <input name="whatsappNumber" value={formData.whatsappNumber} onChange={handleChange} type="tel" className="w-full rounded-r-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5" />
                     </div>
                   </div>
 
@@ -393,23 +363,13 @@ export default function ApplicationForm() {
                     <label className="block text-sm font-medium text-gray-400 mb-3">Languages Spoken <span className="text-red-500">*</span></label>
                     <div className="flex flex-wrap gap-2">
                       {COMMON_LANGUAGES.map(lang => (
-                        <button
-                          key={lang} type="button" onClick={() => toggleLanguage(lang)}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                            formData.languages.includes(lang) 
-                              ? "bg-brand-accent/20 border-brand-accent text-brand-accent" 
-                              : "bg-[#0B1120] border-gray-700 text-gray-400 hover:border-gray-500"
-                          }`}
+                        <button key={lang} type="button" onClick={() => toggleLanguage(lang)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${formData.languages.includes(lang) ? "bg-brand-accent/20 border-brand-accent text-brand-accent" : "bg-[#0B1120] border-gray-700 text-gray-400 hover:border-gray-500"}`}
                         >
                           {lang}
                         </button>
                       ))}
-                      <button
-                        type="button" onClick={() => toggleLanguage("Other")}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                          showCustomLanguage ? "bg-gray-800 border-gray-500 text-white" : "bg-[#0B1120] border-gray-700 text-gray-400 hover:border-gray-500"
-                        }`}
-                      >
+                      <button type="button" onClick={() => toggleLanguage("Other")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${showCustomLanguage ? "bg-gray-800 border-gray-500 text-white" : "bg-[#0B1120] border-gray-700 text-gray-400 hover:border-gray-500"}`}>
                         + Other
                       </button>
                     </div>
@@ -417,13 +377,7 @@ export default function ApplicationForm() {
                     <AnimatePresence>
                       {showCustomLanguage && (
                         <motion.div initial={{ opacity: 0, height: 0, marginTop: 0 }} animate={{ opacity: 1, height: "auto", marginTop: 12 }} exit={{ opacity: 0, height: 0, marginTop: 0 }}>
-                          <input 
-                            type="text" 
-                            placeholder="Type additional languages (comma separated)..." 
-                            value={customLanguage}
-                            onChange={(e) => setCustomLanguage(e.target.value)}
-                            className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3 text-sm"
-                          />
+                          <input type="text" placeholder="Type additional languages (comma separated)..." value={customLanguage} onChange={(e) => setCustomLanguage(e.target.value)} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3 text-sm" />
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -432,7 +386,6 @@ export default function ApplicationForm() {
               </motion.div>
             )}
 
-            {/* STEP 2 */}
             {currentStep === 2 && (
               <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="space-y-8">
                 <div>
@@ -499,7 +452,6 @@ export default function ApplicationForm() {
               </motion.div>
             )}
 
-            {/* STEP 3 */}
             {currentStep === 3 && (
               <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="space-y-8">
                 <div>
@@ -509,7 +461,7 @@ export default function ApplicationForm() {
                 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Link to Work (GitHub, Behance, Drive) <span className="text-gray-600 text-xs">(Optional)</span></label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Link to Work (GitHub, Behance) <span className="text-gray-600 text-xs">(Optional)</span></label>
                     <input name="portfolioUrl" value={formData.portfolioUrl} onChange={handleChange} type="url" className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5" placeholder="https://..." />
                   </div>
                   <div>
@@ -517,9 +469,7 @@ export default function ApplicationForm() {
                     <label className="flex items-center justify-center w-full h-[52px] border-2 border-gray-700 border-dashed rounded-xl cursor-pointer bg-[#0B1120] hover:bg-gray-800 transition-colors">
                       <div className="flex items-center gap-2">
                         <UploadCloud className="w-5 h-5 text-brand-accent" />
-                        <span className="text-sm font-medium text-gray-300 truncate max-w-[200px]">
-                          {resumeFile ? resumeFile.name : "Select Document"}
-                        </span>
+                        <span className="text-sm font-medium text-gray-300 truncate max-w-[200px]">{resumeFile ? resumeFile.name : "Select Document"}</span>
                       </div>
                       <input type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
                     </label>
@@ -527,8 +477,13 @@ export default function ApplicationForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Why do you want to volunteer for Haramain Broadcast? <span className="text-red-500">*</span></label>
-                  <textarea name="motivation" value={formData.motivation} onChange={handleChange} rows={3} className="w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 resize-none" placeholder="Share your motivation..." />
+                  <div className="flex justify-between items-end mb-2">
+                    <label className="block text-sm font-medium text-gray-400">Why do you want to volunteer for Haramain Broadcast? <span className="text-red-500">*</span></label>
+                    <span className={`text-xs font-medium ${formData.motivation.length < 100 ? "text-red-400" : "text-green-500"}`}>
+                      {formData.motivation.length} / 100 min
+                    </span>
+                  </div>
+                  <textarea name="motivation" value={formData.motivation} onChange={handleChange} rows={3} className={`w-full rounded-xl bg-[#0B1120] border-gray-700 text-white focus:border-brand-accent p-3.5 resize-none ${formData.motivation.length > 0 && formData.motivation.length < 100 ? "border-red-500/50 focus:border-red-500" : ""}`} placeholder="Share your motivation..." />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">Briefly describe your most relevant project or experience. <span className="text-red-500">*</span></label>
@@ -537,7 +492,6 @@ export default function ApplicationForm() {
               </motion.div>
             )}
 
-            {/* STEP 4 */}
             {currentStep === 4 && (
               <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="space-y-8">
                 <div>
@@ -565,7 +519,6 @@ export default function ApplicationForm() {
                   </div>
                 </div>
 
-                {/* TERMS SECTION TRIGGER */}
                 <div className="mt-8 p-6 bg-[#0B1120] rounded-2xl border border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
                   <div className="flex items-start gap-4">
                     <div className={`mt-1 flex-shrink-0 w-6 h-6 rounded flex items-center justify-center border transition-colors ${formData.agreedToTerms ? "bg-brand-accent border-brand-accent" : "bg-[#111827] border-gray-600"}`}>
@@ -576,11 +529,7 @@ export default function ApplicationForm() {
                       <p className="text-sm text-gray-500 mt-1">You must read and accept the volunteer terms to submit your application.</p>
                     </div>
                   </div>
-                  <button 
-                    type="button" 
-                    onClick={() => setIsTermsOpen(true)}
-                    className="shrink-0 px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
-                  >
+                  <button type="button" onClick={() => setIsTermsOpen(true)} className="shrink-0 px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">
                     <FileText className="w-4 h-4" /> {formData.agreedToTerms ? "Review Terms" : "Read Terms to Accept"}
                   </button>
                 </div>
@@ -601,8 +550,15 @@ export default function ApplicationForm() {
             </button>
 
             <button
-              type="button" onClick={currentStep === 4 ? handleSubmit : handleNext}
-              disabled={isSubmitting || (currentStep === 4 && !formData.agreedToTerms)}
+              type="button" 
+              onClick={currentStep === 4 ? handleSubmit : handleNext}
+              disabled={
+                isSubmitting || 
+                (currentStep === 1 && !isStep1Valid) || 
+                (currentStep === 2 && !isStep2Valid) || 
+                (currentStep === 3 && !isStep3Valid) || 
+                (currentStep === 4 && !isStep4Valid)
+              }
               className="flex items-center gap-2 px-8 py-3 text-sm font-bold text-white bg-brand-accent hover:bg-blue-500 rounded-xl shadow-[0_0_20px_rgba(14,165,233,0.3)] transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
             >
               {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : 
@@ -612,92 +568,44 @@ export default function ApplicationForm() {
         </div>
       </div>
 
-      {/* --- TERMS MODAL --- */}
       <AnimatePresence>
         {isTermsOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-          >
-            <motion.div 
-              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-              className="bg-[#111827] border border-gray-700 rounded-3xl w-full max-w-3xl overflow-hidden flex flex-col shadow-2xl h-[85vh] max-h-[800px]"
-            >
-              {/* Modal Header */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="bg-[#111827] border border-gray-700 rounded-3xl w-full max-w-3xl overflow-hidden flex flex-col shadow-2xl h-[85vh] max-h-[800px]">
               <div className="px-6 py-5 border-b border-gray-800 flex justify-between items-center bg-[#0B1120]">
                 <h3 className="text-xl font-bold text-white">Volunteer Agreement Terms</h3>
-                <button onClick={() => setIsTermsOpen(false)} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
+                <button onClick={() => setIsTermsOpen(false)} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 transition-colors"><X className="w-5 h-5" /></button>
               </div>
 
-              {/* Scrollable Content Area */}
               <div onScroll={handleTermsScroll} className="flex-1 overflow-y-auto p-6 space-y-6 text-gray-300 text-sm leading-relaxed custom-scrollbar relative">
-                <div className="bg-brand-accent/10 border border-brand-accent/30 text-brand-accent p-4 rounded-xl mb-6 font-medium text-center">
-                  Scroll to the absolute bottom of this document to enable the Accept button.
-                </div>
-
+                <div className="bg-brand-accent/10 border border-brand-accent/30 text-brand-accent p-4 rounded-xl mb-6 font-medium text-center">Scroll to the absolute bottom of this document to enable the Accept button.</div>
                 <h4 className="font-bold text-white text-base">1. Nature of Participation</h4>
                 <p>All positions under HARAMAIN BROADCAST are entirely volunteer-based unless officially stated otherwise in writing by Executive Management. Participation on the team does not constitute an employer-employee relationship and does not create any entitlement to salary, wages, equity, profit-sharing, or ownership rights.</p>
-
                 <h4 className="font-bold text-white text-base mt-6">2. Intellectual Property & Asset Ownership</h4>
                 <p>Volunteers, contributors, moderators, and all team members acknowledge that they do not hold any ownership rights over HARAMAIN BROADCAST. This includes, but is not limited to, platforms, social media pages, websites, source code, brand assets, systems, and content, unless formally documented and executed by the Founder/Management.</p>
-
                 <h4 className="font-bold text-white text-base mt-6">3. Respect for Leadership & Decision-Making</h4>
                 <p>Team members must respect the established leadership hierarchy and their assigned scopes of responsibility. Final authority regarding organizational strategy, branding, partnerships, security protocols, platform management, and operational direction resides exclusively with Management.</p>
-
                 <h4 className="font-bold text-white text-base mt-6">4. Code of Professional Conduct</h4>
                 <p>Every team member is expected to maintain the highest standards of professionalism, honesty, discipline, and respect when representing HARAMAIN BROADCAST. Abusive behavior, harassment, misconduct, or actions that could bring disrepute to the brand are strictly prohibited.</p>
-
                 <h4 className="font-bold text-white text-base mt-6">5. Strict Confidentiality</h4>
                 <p>Internal communications, passwords, technical infrastructure, private strategies, operational procedures, financial records, and sensitive organizational data must remain strictly confidential. Sharing such information outside the organization is a severe breach.</p>
-
                 <h4 className="font-bold text-white text-base mt-6">6. Prohibition of Unauthorized Fundraising</h4>
                 <p>No team member may solicit donations, sponsorships, payments, or financial contributions in the name of HARAMAIN BROADCAST without formalized, written approval from Management. Unauthorized fundraising is a severe violation of organizational trust.</p>
-
                 <h4 className="font-bold text-white text-base mt-6">7. Upholding Islamic Integrity</h4>
                 <p>As an Islamic media platform, all team members are required to uphold core Islamic values of Amanah (trustworthiness), Sidq (honesty), and Adab (respectful conduct). Content creation and personal behavior must align with and reflect the mission and ethical standards of HARAMAIN BROADCAST.</p>
-                
                 <h4 className="font-bold text-white text-base mt-6">8. Resignation & Offboarding</h4>
                 <p>If a volunteer wishes to step down from their role, they must provide reasonable notice to their coordinator to allow for a smooth transition. Upon departure, the volunteer must relinquish all administrative access.</p>
-                
                 <p className="pt-8 text-center text-gray-500 italic">-- End of Document --</p>
               </div>
 
-              {/* Modal Footer */}
               <div className="px-6 py-5 border-t border-gray-800 bg-[#0B1120] flex justify-end gap-4">
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setFormData(prev => ({ ...prev, agreedToTerms: false }));
-                    setIsTermsOpen(false);
-                  }} 
-                  className="px-6 py-2.5 rounded-xl text-gray-400 hover:text-white font-medium transition-colors"
-                >
-                  Reject & Close
-                </button>
-                <button 
-                  type="button" 
-                  disabled={!hasScrolledToBottom}
-                  onClick={() => {
-                    setFormData(prev => ({ ...prev, agreedToTerms: true }));
-                    setStepError(""); // Clear any existing errors about the terms
-                    setIsTermsOpen(false);
-                  }} 
-                  className={`px-8 py-2.5 rounded-xl font-bold transition-all duration-300 ${
-                    hasScrolledToBottom 
-                      ? "bg-brand-accent text-white shadow-[0_0_15px_rgba(14,165,233,0.4)] hover:bg-blue-500 cursor-pointer" 
-                      : "bg-gray-800 text-gray-500 cursor-not-allowed"
-                  }`}
-                >
-                  I Accept the Terms
-                </button>
+                <button type="button" onClick={() => { setFormData(prev => ({ ...prev, agreedToTerms: false })); setIsTermsOpen(false); }} className="px-6 py-2.5 rounded-xl text-gray-400 hover:text-white font-medium transition-colors">Reject & Close</button>
+                <button type="button" disabled={!hasScrolledToBottom} onClick={() => { setFormData(prev => ({ ...prev, agreedToTerms: true })); setStepError(""); setIsTermsOpen(false); }} className={`px-8 py-2.5 rounded-xl font-bold transition-all duration-300 ${hasScrolledToBottom ? "bg-brand-accent text-white shadow-[0_0_15px_rgba(14,165,233,0.4)] hover:bg-blue-500 cursor-pointer" : "bg-gray-800 text-gray-500 cursor-not-allowed"}`}>I Accept the Terms</button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }
