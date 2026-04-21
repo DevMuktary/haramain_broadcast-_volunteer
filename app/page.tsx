@@ -1,205 +1,232 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Globe, Heart, MonitorPlay, Users, Sparkles, ShieldCheck } from "lucide-react";
+import { motion } from "framer-motion";
+import { Globe2, Heart, Award, ChevronRight, Video, Users, Zap } from "lucide-react";
 
-export default function Home() {
+export default function LandingPage() {
+  // Animation Variants
+  const fadeUp = {
+    hidden: { opacity: 0, y: 40 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.2 }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-brand-dark text-white font-sans selection:bg-brand-accent selection:text-white">
       
       {/* 1. HERO SECTION */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/hero-bg.png"
-            alt="Kaabah Background"
-            fill
-            className="object-cover object-center scale-105 animate-[pulse_20s_ease-in-out_infinite_alternate]"
-            priority
-          />
-          {/* Deep Gradient Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
+        {/* Background Image with Overlay */}
+        <div 
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transform scale-105 motion-safe:animate-[pulse_20s_ease-in-out_infinite_alternate]"
+          style={{ backgroundImage: "url('/hero-bg.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/60 to-[#111827]"></div>
         </div>
 
-        {/* Navbar Overlay */}
-        <nav className="absolute top-0 w-full z-50 flex items-center justify-between px-6 py-6 max-w-7xl mx-auto inset-x-0">
-          <div className="flex items-center gap-3">
-            <div className="relative w-12 h-12">
-              <Image src="/logo.png" alt="Haramain Broadcast Logo" fill className="object-contain" />
-            </div>
-            <span className="text-white font-bold tracking-widest text-lg uppercase">Haramain</span>
-          </div>
-          <Link href="/apply" className="text-white text-sm font-medium hover:text-blue-400 transition-colors">
-            Volunteer Login
-          </Link>
+        {/* Navbar inside Hero */}
+        <nav className="absolute top-0 w-full z-50 py-6 px-8 flex justify-between items-center">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="flex items-center gap-3"
+          >
+            <Image src="/logo.png" alt="Haramain Broadcast Logo" width={48} height={48} className="object-contain" />
+            <span className="text-xl font-bold tracking-widest text-white uppercase">Haramain Broadcast</span>
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <Link href="/apply" className="px-6 py-2 rounded-full border border-white/30 bg-white/10 backdrop-blur-md text-sm font-medium hover:bg-white hover:text-brand-dark transition-all duration-300">
+              Join the Team
+            </Link>
+          </motion.div>
         </nav>
 
         {/* Hero Content */}
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto flex flex-col items-center">
-          <span className="px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-blue-200 text-sm font-medium tracking-wide mb-6 opacity-0 animate-[fade-in_1s_ease-out_ forwards]">
-            2026 Volunteer Recruitment Now Open
-          </span>
-          
-          <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-6 leading-tight drop-shadow-xl opacity-0 animate-[slide-in-from-bottom-4_1s_ease-out_0.3s_forwards]">
-            Serve the Haramain. <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
-              Reach the World.
-            </span>
-          </h1>
-          
-          <p className="text-lg md:text-2xl text-gray-200 mb-10 max-w-2xl font-light opacity-0 animate-[slide-in-from-bottom-4_1s_ease-out_0.6s_forwards]">
-            Join our world-class broadcast and digital team to deliver the light of the Two Holy Mosques to millions across the globe.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 opacity-0 animate-[slide-in-from-bottom-4_1s_ease-out_0.9s_forwards]">
-            <Link 
-              href="/apply" 
-              className="group relative inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-blue-600 rounded-full overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(37,99,235,0.5)] focus:outline-none"
-            >
-              <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black" />
-              <span className="relative flex items-center gap-2">
-                Start Application <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </span>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 2. THE GAINS (Why Volunteer?) */}
-      <section className="py-24 bg-gray-50 relative">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">More Than Just a Role</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-              Volunteering with Haramain Broadcast is a commitment to excellence, offering profound spiritual rewards alongside elite professional growth.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Card 1 */}
-            <div className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1">
-              <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors duration-300">
-                <Heart className="w-7 h-7 text-blue-600 group-hover:text-white transition-colors" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Sadaqah Jariyah</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Every broadcast, graphic, or line of code you contribute helps spread the message of Islam, earning you continuous spiritual rewards globally.
-              </p>
-            </div>
-
-            {/* Card 2 */}
-            <div className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1">
-              <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center mb-6 group-hover:bg-emerald-600 transition-colors duration-300">
-                <Sparkles className="w-7 h-7 text-emerald-600 group-hover:text-white transition-colors" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">World-Class Portfolio</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Work within a high-tier corporate structure using modern technologies. Your contributions will be a massive asset to your professional CV.
-              </p>
-            </div>
-
-            {/* Card 3 */}
-            <div className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1">
-              <div className="w-14 h-14 rounded-xl bg-purple-50 flex items-center justify-center mb-6 group-hover:bg-purple-600 transition-colors duration-300">
-                <Globe className="w-7 h-7 text-purple-600 group-hover:text-white transition-colors" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Global Network</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Connect and collaborate with top-tier professionals, scholars, and creatives from across the globe in a disciplined, structured environment.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. DEPARTMENTS PREVIEW (Using Madinah & Makkah Cards) */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Where Do You Fit In?</h2>
-              <p className="text-gray-600 text-lg max-w-xl">
-                We are recruiting specialists across 30+ distinct roles. Find the department where your skills will make the highest impact.
-              </p>
-            </div>
-            <Link href="/apply" className="text-blue-600 font-semibold hover:text-blue-700 flex items-center gap-2 group">
-              View All 31 Roles <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            {/* Broadcast & Production Card */}
-            <div className="relative h-96 rounded-3xl overflow-hidden group cursor-pointer">
-              <Image src="/makkah-card.png" alt="Makkah Card" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity duration-300" />
-              <div className="absolute bottom-0 left-0 p-8 w-full">
-                <div className="bg-white/20 backdrop-blur-md w-max p-2 rounded-lg mb-4">
-                  <MonitorPlay className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-2">Broadcast & Media</h3>
-                <p className="text-gray-300 text-sm mb-4 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                  Directors, Video Editors, and Live Stream Managers ensuring flawless delivery.
-                </p>
-              </div>
-            </div>
-
-            {/* Design & Tech Card */}
-            <div className="relative h-96 rounded-3xl overflow-hidden group cursor-pointer">
-              <Image src="/madinah-card.png" alt="Madinah Card" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity duration-300" />
-              <div className="absolute bottom-0 left-0 p-8 w-full">
-                <div className="bg-white/20 backdrop-blur-md w-max p-2 rounded-lg mb-4">
-                  <ShieldCheck className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-2">Engineering & Design</h3>
-                <p className="text-gray-300 text-sm mb-4 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                  UI/UX Designers, Web Developers, and App Engineers building our infrastructure.
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* 4. IMPACT SECTION (Using Pattern Background) */}
-      <section className="relative py-32 overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 z-0 opacity-20">
-          <Image src="/pattern.png" alt="Masjid Al Haram View" fill className="object-cover object-center fixed" />
-        </div>
-        <div className="absolute inset-0 bg-blue-900/90 z-0" />
-        
-        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-          <Users className="w-16 h-16 text-blue-400 mx-auto mb-8" />
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-8 leading-tight">
-            "The best of people are those that bring most benefit to the rest of mankind."
-          </h2>
-          <p className="text-blue-200 text-xl font-light mb-12">
-            This is your opportunity to leverage your worldly skills for an eternal purpose. Are you ready to join the team?
-          </p>
-          <Link 
-            href="/apply" 
-            className="inline-flex items-center justify-center px-10 py-4 text-lg font-bold text-blue-900 bg-white rounded-full hover:bg-gray-100 transition-colors shadow-2xl"
+        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center mt-20">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1 }}
           >
-            Apply to Volunteer Now
-          </Link>
+            <span className="inline-block py-1 px-3 rounded-full bg-brand-accent/20 border border-brand-accent/50 text-brand-accent text-sm font-semibold tracking-wide mb-6">
+              Official Volunteer Recruitment 2026
+            </span>
+          </motion.div>
+          
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight"
+          >
+            Amplify the Message of the <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">Haramain</span>
+          </motion.h1>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-lg md:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto font-light"
+          >
+            Become part of a world-class broadcast network dedicated to transmitting the spirituality, news, and live events of Makkah and Madinah to millions around the globe.
+          </motion.p>
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+          >
+            <Link href="/apply" className="group relative px-8 py-4 bg-brand-accent text-white font-bold text-lg rounded-full overflow-hidden shadow-[0_0_40px_rgba(14,165,233,0.4)] hover:shadow-[0_0_60px_rgba(14,165,233,0.6)] transition-all duration-300 flex items-center gap-2">
+              <span className="relative z-10">Start Your Application</span>
+              <ChevronRight className="relative z-10 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-brand-accent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"></div>
+            </Link>
+          </motion.div>
         </div>
       </section>
 
-      {/* 5. FOOTER */}
-      <footer className="bg-gray-900 py-12 border-t border-gray-800 text-center">
+      {/* 2. THE GAIN / VALUE PROPOSITION */}
+      <section className="py-24 bg-[#0B1120] relative">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-center mb-6 relative w-12 h-12 mx-auto grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
-             <Image src="/logo.png" alt="Logo" fill className="object-contain" />
-          </div>
-          <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} Haramain Broadcast. All rights reserved. <br/>
-            <span className="text-gray-600 text-xs mt-2 block">A non-profit initiative. Participation does not constitute employment.</span>
-          </p>
-        </div>
-      </footer>
+          <motion.div 
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}
+            variants={fadeUp} className="text-center mb-20"
+          >
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Why Volunteer With Us?</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto text-lg">Joining Haramain Broadcast is more than a role; it is a profound investment in your hereafter and a massive leap for your professional portfolio.</p>
+          </motion.div>
 
+          <motion.div 
+            variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+          >
+            {/* Benefit 1 */}
+            <motion.div variants={fadeUp} className="bg-[#111827] border border-gray-800 p-8 rounded-2xl hover:border-brand-accent/50 transition-colors group">
+              <div className="w-14 h-14 bg-yellow-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Heart className="w-7 h-7 text-yellow-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-3">Sadaqah Jariyah</h3>
+              <p className="text-gray-400 leading-relaxed">Your code, designs, and content will directly connect millions of Muslims to the holy sites. The spiritual reward for facilitating this connection is immeasurable.</p>
+            </motion.div>
+
+            {/* Benefit 2 */}
+            <motion.div variants={fadeUp} className="bg-[#111827] border border-gray-800 p-8 rounded-2xl hover:border-brand-accent/50 transition-colors group">
+              <div className="w-14 h-14 bg-brand-accent/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Zap className="w-7 h-7 text-brand-accent" />
+              </div>
+              <h3 className="text-xl font-bold mb-3">World-Class Experience</h3>
+              <p className="text-gray-400 leading-relaxed">Work within a highly structured, corporate-standard digital environment. Build scalable systems, craft premium UI/UX, and manage high-tier broadcast operations.</p>
+            </motion.div>
+
+            {/* Benefit 3 */}
+            <motion.div variants={fadeUp} className="bg-[#111827] border border-gray-800 p-8 rounded-2xl hover:border-brand-accent/50 transition-colors group">
+              <div className="w-14 h-14 bg-purple-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Users className="w-7 h-7 text-purple-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-3">Global Elite Network</h3>
+              <p className="text-gray-400 leading-relaxed">Collaborate with talented technical founders, media directors, and creative professionals from across the globe in a disciplined, mission-driven team.</p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 3. VISUAL STORYTELLING (Using Makkah & Madinah Cards) */}
+      <section className="py-24 bg-[#111827] border-y border-gray-800 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          
+          <div className="flex flex-col lg:flex-row items-center gap-16 mb-24">
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
+              className="lg:w-1/2"
+            >
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-700 group">
+                <div className="absolute inset-0 bg-brand-accent/20 group-hover:bg-transparent transition-colors duration-500 z-10"></div>
+                <Image src="/makkah-card.png" alt="Makkah Clock Tower" width={800} height={600} className="w-full h-[400px] object-cover group-hover:scale-105 transition-transform duration-700" />
+              </div>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
+              className="lg:w-1/2 space-y-6"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold">From the Heart of Makkah...</h2>
+              <p className="text-gray-400 text-lg">We are building the infrastructure to broadcast the beauty, the Adhan, and the events of Masjid al-Haram with crystal clarity. As a developer, designer, or media expert, your work ensures flawless delivery to every screen.</p>
+              <ul className="space-y-3">
+                <li className="flex items-center gap-3 text-gray-300"><Video className="w-5 h-5 text-brand-accent" /> High-fidelity live stream engineering</li>
+                <li className="flex items-center gap-3 text-gray-300"><Award className="w-5 h-5 text-brand-accent" /> Premium content curation</li>
+              </ul>
+            </motion.div>
+          </div>
+
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
+             <motion.div 
+              initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
+              className="lg:w-1/2"
+            >
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-700 group">
+                <div className="absolute inset-0 bg-yellow-500/20 group-hover:bg-transparent transition-colors duration-500 z-10"></div>
+                <Image src="/madinah-card.png" alt="Madinah Mosque" width={800} height={600} className="w-full h-[400px] object-cover group-hover:scale-105 transition-transform duration-700" />
+              </div>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
+              className="lg:w-1/2 space-y-6"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold">...To the Peace of Madinah</h2>
+              <p className="text-gray-400 text-lg">Join the team that translates the tranquility of Al-Masjid an-Nabawi into compelling digital experiences. Whether you are managing social communities or writing clean backend logic, your contribution matters.</p>
+              <ul className="space-y-3">
+                <li className="flex items-center gap-3 text-gray-300"><Globe2 className="w-5 h-5 text-brand-accent" /> Global audience engagement</li>
+                <li className="flex items-center gap-3 text-gray-300"><Users className="w-5 h-5 text-brand-accent" /> Cross-platform social media strategy</li>
+              </ul>
+            </motion.div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 4. FINAL CTA WITH PATTERN BACKGROUND */}
+      <section className="relative py-32 overflow-hidden flex justify-center items-center">
+        {/* Abstract Pattern Background */}
+        <div 
+          className="absolute inset-0 z-0 opacity-10 bg-cover bg-center"
+          style={{ backgroundImage: "url('/pattern.png')" }}
+        ></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] to-transparent z-0"></div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="relative z-10 text-center max-w-3xl px-6"
+        >
+          <Image src="/logo.png" alt="Icon" width={80} height={80} className="mx-auto mb-8 opacity-80" />
+          <h2 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">Ready to Make an Impact?</h2>
+          <p className="text-xl text-gray-400 mb-10">We are currently accepting applications across 31 distinct technical, creative, and administrative roles.</p>
+          <Link href="/apply" className="inline-flex items-center gap-2 px-10 py-5 bg-white text-brand-dark font-bold text-lg rounded-full hover:bg-gray-200 transition-colors shadow-2xl">
+            Begin Application Process <ChevronRight className="w-6 h-6" />
+          </Link>
+        </motion.div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-[#0B1120] border-t border-gray-800 py-8 text-center text-gray-500 text-sm relative z-10">
+        <p>© {new Date().getFullYear()} Haramain Broadcast. A unified digital network.</p>
+      </footer>
     </div>
   );
 }
