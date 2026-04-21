@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enum for the Admin Vetting Process
+enum ApplicationStatus {
+  PENDING
+  REVIEWING
+  SHORTLISTED
+  ACCEPTED
+  REJECTED
+}
+
+// Enum for Application Departments
+enum Department {
+  BROADCAST_PRODUCTION
+  CONTENT_EDITORIAL
+  DESIGN_ENGINEERING
+  MARKETING_ENGAGEMENT
+  ADMIN_OPERATIONS
+}
+
+model Applicant {
+  id                  String   @id @default(uuid())
+  
+  // Step 1: Personal Information
+  fullName            String
+  email               String   @unique
+  whatsappNumber      String
+  country             String
+  city                String
+  languages           String[] 
+  
+  // Step 2: Role & Experience
+  department          Department
+  role                String
+  experienceLevel     String   
+  currentStatus       String   
+  
+  // Step 3: Portfolio & Motivation
+  linkedinUrl         String?
+  portfolioUrl        String?  
+  resumeUrl           String?  
+  motivation          String   @db.Text
+  relevantExperience  String   @db.Text
+  
+  // Step 4: Commitment
+  availableHours      String   
+  timezone            String
+  agreedToTerms       Boolean  @default(true)
+  
+  // Admin Vetting Fields
+  status              ApplicationStatus @default(PENDING)
+  adminNotes          String?           @db.Text
+  
+  // Timestamps
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
