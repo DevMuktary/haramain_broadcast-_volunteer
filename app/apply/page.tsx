@@ -416,7 +416,7 @@ export default function ApplicationForm() {
                     
                     <AnimatePresence>
                       {showCustomLanguage && (
-                        <motion.div initial={{ opacity: 0, height: 0, mt: 0 }} animate={{ opacity: 1, height: "auto", mt: 12 }} exit={{ opacity: 0, height: 0, mt: 0 }}>
+                        <motion.div initial={{ opacity: 0, height: 0, marginTop: 0 }} animate={{ opacity: 1, height: "auto", marginTop: 12 }} exit={{ opacity: 0, height: 0, marginTop: 0 }}>
                           <input 
                             type="text" 
                             placeholder="Type additional languages (comma separated)..." 
