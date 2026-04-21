@@ -1,36 +1,32 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { sendConfirmationEmail } from "@/lib/email"; // This connects your email file
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
-    // 1. Parse the incoming form data
     const body = await request.json();
+    console.log(`[API] Received new application for: ${body.email}`);
 
-    // 2. Map string department to the Prisma Enum
-    const departmentEnum = body.department as any; // Bypassing strict type check for the payload
-
-    // 3. Save the applicant to the database
+    // 1. Save the applicant to the database
     const newApplicant = await prisma.applicant.create({
       data: {
         fullName: body.fullName,
         email: body.email,
         whatsappNumber: body.whatsappNumber,
         country: body.country,
-        city: body.city,
-        // If languages are passed as a comma-separated string, split them. Otherwise, default to empty array.
+        city: body.city || "",
         languages: body.languages ? body.languages.split(",").map((l: string) => l.trim()) : [],
         
-        department: departmentEnum,
+        department: body.department as any,
         role: body.role,
         experienceLevel: body.experienceLevel,
         currentStatus: body.currentStatus,
         
         linkedinUrl: body.linkedinUrl || null,
         portfolioUrl: body.portfolioUrl || null,
-        // We will pass the Cloudinary URL here later once uploaded
         resumeUrl: body.resumeUrl || null, 
         motivation: body.motivation,
         relevantExperience: body.relevantExperience,
@@ -41,19 +37,22 @@ export async function POST(request: Request) {
       },
     });
 
-    // 4. TODO: Trigger ZeptoMail confirmation email here
-    // await sendConfirmationEmail(newApplicant.email, newApplicant.fullName);
+    console.log(`[API] Database save successful. ID: ${newApplicant.id}`);
 
-    // 5. Return success response to the frontend
+    // 2. FORCE TRIGGER THE ZEPTOMAIL FUNCTION
+    console.log("[API] Triggering ZeptoMail Confirmation...");
+    await sendConfirmationEmail(newApplicant.email, newApplicant.fullName);
+    console.log("[API] Email function execution complete.");
+
+    // 3. Return success response to the frontend
     return NextResponse.json(
       { message: "Application submitted successfully!", applicantId: newApplicant.id },
       { status: 201 }
     );
 
   } catch (error: any) {
-    console.error("Error submitting application:", error);
+    console.error("❌ [API] FATAL ERROR IN ROUTE:", error);
     
-    // Handle specific Prisma unique constraint error (e.g., email already applied)
     if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
       return NextResponse.json(
         { error: "An application with this email address already exists." },
@@ -65,8 +64,5 @@ export async function POST(request: Request) {
       { error: "Failed to submit application. Please try again later." },
       { status: 500 }
     );
-  } finally {
-    // Disconnect Prisma to prevent memory leaks in serverless environments
-    await prisma.$disconnect();
   }
 }
