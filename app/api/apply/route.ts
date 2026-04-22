@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { sendConfirmationEmail } from "@/lib/email"; // This connects your email file
+import { sendConfirmationEmail, sendAdminAlertEmail } from "@/lib/email"; // Imported the admin alert
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
@@ -39,10 +39,16 @@ export async function POST(request: Request) {
 
     console.log(`[API] Database save successful. ID: ${newApplicant.id}`);
 
-    // 2. FORCE TRIGGER THE ZEPTOMAIL FUNCTION
-    console.log("[API] Triggering ZeptoMail Confirmation...");
-    await sendConfirmationEmail(newApplicant.email, newApplicant.fullName);
-    console.log("[API] Email function execution complete.");
+    // 2. Trigger Emails Concurrently
+    console.log("[API] Firing ZeptoMail routines...");
+    
+    // We use Promise.all to send both emails at the exact same time without slowing down the server
+    await Promise.all([
+      sendConfirmationEmail(newApplicant.email, newApplicant.fullName),
+      sendAdminAlertEmail(newApplicant.fullName, newApplicant.role, newApplicant.department)
+    ]);
+
+    console.log("[API] Email execution complete.");
 
     // 3. Return success response to the frontend
     return NextResponse.json(
