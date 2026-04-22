@@ -115,7 +115,7 @@ export async function sendConfirmationEmail(toEmail: string, applicantName: stri
 }
 
 // -------------------------------------------------------------
-// NEW: DYNAMIC STATUS UPDATE EMAIL FUNCTION
+// DYNAMIC STATUS UPDATE EMAIL FUNCTION
 // -------------------------------------------------------------
 export async function sendStatusUpdateEmail(toEmail: string, applicantName: string, status: string, role: string) {
   const token = process.env.ZEPTOMAIL_TOKEN;
@@ -252,5 +252,88 @@ export async function sendStatusUpdateEmail(toEmail: string, applicantName: stri
     });
   } catch (error) {
     console.error("❌ ZEPTOMAIL FATAL ERROR:", error);
+  }
+}
+
+// -------------------------------------------------------------
+// NEW: INTERNAL ADMIN ALERT EMAIL
+// -------------------------------------------------------------
+export async function sendAdminAlertEmail(applicantName: string, role: string, department: string) {
+  const token = process.env.ZEPTOMAIL_TOKEN;
+  const bounceAddress = process.env.ZEPTOMAIL_BOUNCE_ADDRESS;
+  const fromAddress = process.env.ZEPTOMAIL_FROM_ADDRESS;
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL; 
+  const LIVE_DOMAIN = "https://volunteer.haramainbroadcast.live"; 
+
+  if (!token || !bounceAddress || !fromAddress || !adminEmail) {
+    console.warn("⚠️ Skipping Admin Alert: ADMIN_NOTIFICATION_EMAIL is not set in environment variables.");
+    return;
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="padding: 40px 20px;">
+        <tr>
+          <td align="center">
+            <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              <tr>
+                <td style="background-color: #0B1120; padding: 30px; border-bottom: 3px solid #f59e0b;">
+                  <img src="${LIVE_DOMAIN}/logo.png" alt="Haramain Broadcast" width="40" style="display: block; margin-bottom: 15px;">
+                  <h2 style="color: #ffffff; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px;">⚠️ New Application Received</h2>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 30px;">
+                  <p style="margin: 0 0 15px 0; color: #4b5563; font-size: 16px;">A new volunteer application has just been submitted to the portal.</p>
+                  
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                    <tr>
+                      <td style="padding-bottom: 10px;">
+                        <span style="color: #64748b; font-size: 12px; text-transform: uppercase; font-weight: bold;">Candidate Name</span><br>
+                        <strong style="color: #0f172a; font-size: 16px;">${applicantName}</strong>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding-top: 10px; border-top: 1px solid #e2e8f0;">
+                        <span style="color: #64748b; font-size: 12px; text-transform: uppercase; font-weight: bold;">Position Applied For</span><br>
+                        <span style="color: #0f172a; font-size: 15px;">${role} (${department.replace('_', ' ')})</span>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <a href="${LIVE_DOMAIN}/admin/applications" style="display: inline-block; padding: 12px 24px; background-color: #0ea5e9; color: #ffffff; text-decoration: none; font-weight: bold; border-radius: 8px;">Review Application Now</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const payload = {
+    bounce_address: bounceAddress,
+    from: { address: fromAddress, name: "Haramain System" },
+    to: [{ email_address: { address: adminEmail, name: "Executive Admin" } }],
+    subject: `🚨 New Applicant: ${applicantName} - ${role}`,
+    htmlbody: htmlContent
+  };
+
+  try {
+    await fetch("https://api.zeptomail.com/v1.1/email", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": token.startsWith("Zoho-enczapikey") ? token : `Zoho-enczapikey ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    console.log(`✅ Admin Alert delivered to ${adminEmail}`);
+  } catch (error) {
+    console.error("❌ Admin Alert Failed:", error);
   }
 }
