@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
+import { sendStatusUpdateEmail } from '@/lib/email';
 
 const prisma = new PrismaClient();
 
@@ -40,10 +41,32 @@ export async function PATCH(request: Request) {
 
   try {
     const { id, status } = await request.json();
+
+    // 1. Get the current status from the DB before updating
+    const currentApp = await prisma.applicant.findUnique({ where: { id } });
+    if (!currentApp) {
+      return NextResponse.json({ error: "Application not found" }, { status: 404 });
+    }
+
+    // 2. Update the status in the database
     const updatedApplication = await prisma.applicant.update({
       where: { id },
       data: { status }
     });
+
+    // 3. Automatically send an email IF the status is officially finalized AND it actually changed
+    const finalStatuses = ["SHORTLISTED", "ACCEPTED", "REJECTED"];
+    if (currentApp.status !== status && finalStatuses.includes(status)) {
+      console.log(`[ADMIN] Triggering Status Email to ${updatedApplication.email} for ${status}`);
+      
+      await sendStatusUpdateEmail(
+        updatedApplication.email, 
+        updatedApplication.fullName, 
+        status, 
+        updatedApplication.role
+      );
+    }
+
     return NextResponse.json(updatedApplication);
   } catch (error) {
     return NextResponse.json({ error: "Failed to update status" }, { status: 500 });
